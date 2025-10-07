@@ -3,6 +3,7 @@ from langchain.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings 
 from indexing import create_embedding_and_store_in_croma_db
 from dotenv import load_dotenv 
+from typing import List, Dict, Any, Tuple
 load_dotenv()
 
 def load_and_query_chroma_db(query_text:str):
@@ -22,6 +23,18 @@ def load_and_query_chroma_db(query_text:str):
     
     print(f"Successfully loaded vector store from {os.getenv("PERSIST_DIRECTORY")} folder.")
     print(f"Total chunks found in collection: {vector_store._collection.count()}")
-    retrieved_docs = vector_store.similarity_search_with_score(query_text, k=3) 
+    retrieved_results: List[Tuple[Any, float]] = vector_store.similarity_search_with_score(query_text, k=3) 
 
-    return retrieved_docs
+    results_list: List[Dict[str, Any]] = []
+
+    for i, (doc, score) in enumerate(retrieved_results):
+        source = doc.metadata.get('source', 'N/A')
+        page = doc.metadata.get('page', 'N/A')
+        results_list.append({
+            'chunk_no':i+1,
+            "source":source,
+            'page':page,
+            'raw distance score ':score,
+            "content":doc.page_content.replace('\n',' ').strip()
+        })
+    return results_list
